@@ -17,20 +17,23 @@ func main() {
 	go validateOrders(receivedOrdersCh, validOrderCh, invalidOrderCh)
 
 	wg.Add(1) // 💡 Channels are blocking, so Add(1) is enough
-	go func() {
+
+	go func(validOrderCh <-chan order) {
 		order := <-validOrderCh
 		fmt.Printf("Valid order received: %v\n", order)
 		wg.Done()
-	}()
-	go func() {
+	}(validOrderCh)
+
+	go func(invalidOrderCh <-chan invalidOrder) {
 		order := <-invalidOrderCh
 		fmt.Printf("Invalid order was received: %v. Issue: %v\n", order.order, order.err)
 		wg.Done()
-	}()
+	}(invalidOrderCh)
+
 	wg.Wait()
 }
 
-func validateOrders(in, out chan order, errCh chan invalidOrder) {
+func validateOrders(in <-chan order, out chan<- order, errCh chan<- invalidOrder) {
 	order := <-in
 	if order.Quantity <= 0 {
 		errCh <- invalidOrder{order: order, err: errors.New("quantity must be greater than zero")}
@@ -39,7 +42,7 @@ func validateOrders(in, out chan order, errCh chan invalidOrder) {
 	}
 }
 
-func receiveOrders(out chan order) {
+func receiveOrders(out chan<- order) {
 	for _, rawOrder := range rawOrder {
 		var newOrder order
 		err := json.Unmarshal([]byte(rawOrder), &newOrder)
