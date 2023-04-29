@@ -1,1 +1,5 @@
-# go-conc-prog
+Concurrency in Go
+
+Run each module with:
+
+  go run .
