@@ -4,6 +4,7 @@ use (
 	./buffered
 	./directional
 	./extra/mutexlock
+	./extra/synconce
 	./orders
 	./patterns/encapsulation-goroutines
 	./patterns/nonblocking-error-channel
