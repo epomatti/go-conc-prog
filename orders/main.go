@@ -12,31 +12,59 @@ func main() {
 	var wg sync.WaitGroup
 	receivedOrdersCh := receiveOrders()
 	validOrderCh, invalidOrderCh := validateOrders(receivedOrdersCh)
+	reservedInventoryCh := reserveInventory(validOrderCh)
 
-	wg.Add(1) // 💡 Channels are blocking, so Add(1) is enough
-
-	go func(validOrderCh <-chan order, invalidOrderCh <-chan invalidOrder) {
-	loop:
-		for {
-			select {
-			case order, ok := <-validOrderCh:
-				if ok {
-					fmt.Printf("Valid order received: %v\n", order)
-				} else {
-					break loop
-				}
-			case invalidOrder, ok := <-invalidOrderCh:
-				if ok {
-					fmt.Printf("Invalid order was received: %v. Issue: %v\n", invalidOrder.order, invalidOrder.err)
-				} else {
-					break loop
-				}
-			}
+	wg.Add(2) // 💡 Channels are blocking, so Add(1) is enough
+	go func(invalidOrderCh <-chan invalidOrder) {
+		for order := range invalidOrderCh {
+			fmt.Printf("Invalid order received: %v. Issue: %v\n", order.order, order.err)
 		}
 		wg.Done()
-	}(validOrderCh, invalidOrderCh)
+	}(invalidOrderCh)
+
+	go func(reservedInventoryCh <-chan order) {
+		for order := range reservedInventoryCh {
+			fmt.Printf("Inventory reserved for: %v\n", order)
+		}
+		wg.Done()
+	}(reservedInventoryCh)
 
 	wg.Wait()
+
+	// go func(validOrderCh <-chan order, invalidOrderCh <-chan invalidOrder) {
+	// loop:
+	// 	for {
+	// 		select {
+	// 		case order, ok := <-validOrderCh:
+	// 			if ok {
+	// 				fmt.Printf("Valid order received: %v\n", order)
+	// 			} else {
+	// 				break loop
+	// 			}
+	// 		case invalidOrder, ok := <-invalidOrderCh:
+	// 			if ok {
+	// 				fmt.Printf("Invalid order was received: %v. Issue: %v\n", invalidOrder.order, invalidOrder.err)
+	// 			} else {
+	// 				break loop
+	// 			}
+	// 		}
+	// 	}
+	// 	wg.Done()
+	// }(validOrderCh, invalidOrderCh)
+}
+
+func reserveInventory(in <-chan order) <-chan order {
+	out := make(chan order)
+
+	go func() {
+		for o := range in {
+			o.Status = reserved
+			out <- o
+		}
+		close(out)
+	}()
+
+	return out
 }
 
 func validateOrders(in <-chan order) (<-chan order, <-chan invalidOrder) {
