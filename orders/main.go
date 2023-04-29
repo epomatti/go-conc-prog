@@ -14,7 +14,7 @@ func main() {
 	validOrderCh, invalidOrderCh := validateOrders(receivedOrdersCh)
 	reservedInventoryCh := reserveInventory(validOrderCh)
 
-	wg.Add(2) // 💡 Channels are blocking, so Add(1) is enough
+	wg.Add(1)
 	go func(invalidOrderCh <-chan invalidOrder) {
 		for order := range invalidOrderCh {
 			fmt.Printf("Invalid order received: %v. Issue: %v\n", order.order, order.err)
@@ -22,35 +22,19 @@ func main() {
 		wg.Done()
 	}(invalidOrderCh)
 
-	go func(reservedInventoryCh <-chan order) {
-		for order := range reservedInventoryCh {
-			fmt.Printf("Inventory reserved for: %v\n", order)
-		}
-		wg.Done()
-	}(reservedInventoryCh)
+	const workers = 3
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func(reservedInventoryCh <-chan order) {
+			for order := range reservedInventoryCh {
+				fmt.Printf("Inventory reserved for: %v\n", order)
+			}
+			wg.Done()
+		}(reservedInventoryCh)
+	}
 
 	wg.Wait()
 
-	// go func(validOrderCh <-chan order, invalidOrderCh <-chan invalidOrder) {
-	// loop:
-	// 	for {
-	// 		select {
-	// 		case order, ok := <-validOrderCh:
-	// 			if ok {
-	// 				fmt.Printf("Valid order received: %v\n", order)
-	// 			} else {
-	// 				break loop
-	// 			}
-	// 		case invalidOrder, ok := <-invalidOrderCh:
-	// 			if ok {
-	// 				fmt.Printf("Invalid order was received: %v. Issue: %v\n", invalidOrder.order, invalidOrder.err)
-	// 			} else {
-	// 				break loop
-	// 			}
-	// 		}
-	// 	}
-	// 	wg.Done()
-	// }(validOrderCh, invalidOrderCh)
 }
 
 func reserveInventory(in <-chan order) <-chan order {
