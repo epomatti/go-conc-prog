@@ -4,6 +4,7 @@ use (
 	./buffered
 	./directional
 	./extra/mutexlock
+	./extra/racedetector
 	./extra/synconce
 	./orders
 	./patterns/encapsulation-goroutines
