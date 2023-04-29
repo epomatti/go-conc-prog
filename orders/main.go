@@ -18,17 +18,15 @@ func main() {
 
 	wg.Add(1) // 💡 Channels are blocking, so Add(1) is enough
 
-	go func(validOrderCh <-chan order) {
-		order := <-validOrderCh
-		fmt.Printf("Valid order received: %v\n", order)
+	go func(validOrderCh <-chan order, invalidOrderCh <-chan invalidOrder) {
+		select {
+		case order := <-validOrderCh:
+			fmt.Printf("Valid order received: %v\n", order)
+		case invalidOrder := <-invalidOrderCh:
+			fmt.Printf("Invalid order was received: %v. Issue: %v\n", invalidOrder.order, invalidOrder.err)
+		}
 		wg.Done()
-	}(validOrderCh)
-
-	go func(invalidOrderCh <-chan invalidOrder) {
-		order := <-invalidOrderCh
-		fmt.Printf("Invalid order was received: %v. Issue: %v\n", order.order, order.err)
-		wg.Done()
-	}(invalidOrderCh)
+	}(validOrderCh, invalidOrderCh)
 
 	wg.Wait()
 }
