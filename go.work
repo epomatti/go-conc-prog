@@ -4,4 +4,5 @@ use (
 	./buffered
 	./directional
 	./orders
+	./patterns/nonblocking-error-channel
 )
