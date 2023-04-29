@@ -3,6 +3,7 @@ go 1.20
 use (
 	./buffered
 	./directional
+	./extra/mutexlock
 	./orders
 	./patterns/encapsulation-goroutines
 	./patterns/nonblocking-error-channel
