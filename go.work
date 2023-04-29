@@ -4,5 +4,6 @@ use (
 	./buffered
 	./directional
 	./orders
+	./patterns/encapsulation-goroutines
 	./patterns/nonblocking-error-channel
 )
